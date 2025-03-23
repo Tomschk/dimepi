@@ -38,6 +38,25 @@ keypad_to_mp3 = {
 # Track credits locally (simple counter)
 credits = 0
 
+# Ensure GPIO mode is set only once at the start of the program
+GPIO.setmode(GPIO.BCM)
+
+def coinslot_handler(c):
+    # Make sure the GPIO pin is properly set up for coin detection
+    GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    # Add event detection for falling edge (coin inserted)
+    try:
+        GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, callback=coinslot_callback, bouncetime=200)
+        logging.info("Edge detection set up successfully")
+    except RuntimeError as e:
+        logging.error(f"Failed to add edge detection: {e}")
+
+def coinslot_callback(channel):
+    global credits
+    credits += 1
+    logging.info(f"Coin inserted - Credits: {credits}")
+
 async def jukebox_handler(queue, keypad):
     global credits
     while True:
@@ -72,16 +91,6 @@ def play_mp3(mp3_path):
     while pygame.mixer.music.get_busy():  # Wait until the song finishes
         time.sleep(0.1)
 
-def coinslot_handler(c):
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, callback=coinslot_callback, bouncetime=200)
-
-def coinslot_callback(channel):
-    global credits
-    credits += 1
-    logging.info(f"Coin inserted - Credits: {credits}")
-
 def init_cabinet_lights(r, g, b):
     # Assuming NeoPixel is set up (leave it unchanged)
     pass
@@ -89,20 +98,25 @@ def init_cabinet_lights(r, g, b):
 def main():
     global credits
     try:
+        # Set up the cabinet lights (if needed)
         cabinet_lights = init_cabinet_lights(int(cabinet_lights_colour[0]), int(cabinet_lights_colour[1]), int(cabinet_lights_colour[2]))
+        
+        # Initialize the keypad queue and keypad handler
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
 
-        coinslot_handler()
+        # Initialize the coin slot handler
+        coinslot_handler(credits)
 
+        # Set up the event loop for asynchronous tasks
         loop = asyncio.get_event_loop()
-        loop.create_task(keypad.get_key_combination())
-        loop.create_task(jukebox_handler(keypad_queue, keypad))
+        loop.create_task(keypad.get_key_combination())  # Wait for keypad input
+        loop.create_task(jukebox_handler(keypad_queue, keypad))  # Handle song selection
         loop.run_forever()
 
     finally:
-        GPIO.cleanup()
-        loop.close()
+        GPIO.cleanup()  # Cleanup GPIO resources when done
+        loop.close()  # Close the event loop
 
 if __name__ == "__main__":
     main()
