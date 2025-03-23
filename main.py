@@ -45,26 +45,32 @@ def coinslot_callback(channel):
     keypad.set_credit_light_on()
 
 def setup_coinslot():
+    GPIO.cleanup()  # Ensure a clean GPIO state before setting up pins
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(COINSLOT_GPIO_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(COINSLOT_GPIO_PIN, GPIO.FALLING, 
                           callback=coinslot_callback, bouncetime=200)
 
-
 def main():
+    loop = asyncio.get_event_loop()  # Initialize the event loop first
     try:
         keypad_queue = asyncio.Queue()
         global keypad
         keypad = Keypad(keypad_queue)
         setup_coinslot()
 
-        loop = asyncio.get_event_loop()
+        # Create and run asynchronous tasks
         loop.create_task(keypad.get_key_combination())
         loop.create_task(jukebox_handler(keypad_queue, keypad))
         loop.run_forever()
     
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+    
     finally:
-        GPIO.cleanup()
+        GPIO.cleanup()  # Clean up GPIO pins when done
+        if loop.is_running():  # Ensure the loop is running before stopping
+            loop.stop()
         loop.close()
 
 if __name__ == "__main__":
