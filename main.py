@@ -53,7 +53,6 @@ def setup_coinslot():
 
 def main():
     try:
-        cabinet_lights = init_cabinet_lights(*CABINET_LIGHTS_COLOR)
         keypad_queue = asyncio.Queue()
         global keypad
         keypad = Keypad(keypad_queue)
