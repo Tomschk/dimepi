@@ -50,15 +50,6 @@ def setup_coinslot():
     GPIO.add_event_detect(COINSLOT_GPIO_PIN, GPIO.FALLING, 
                           callback=coinslot_callback, bouncetime=200)
 
-# Cabinet lighting functions
-def init_cabinet_lights(r, g, b):
-    pixels = neopixel.NeoPixel(board.D18, 1)
-    pixels[0] = (r, g, b)
-    return pixels
-
-def set_cabinet_lights(pixels, r, g, b):
-    pixels[0] = (r, g, b)
-    return pixels
 
 def main():
     try:
