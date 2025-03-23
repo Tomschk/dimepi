@@ -5,7 +5,6 @@ import asyncio
 import logging
 import RPi.GPIO as GPIO
 import board
-import neopixel
 from keypad import Keypad
 
 # Configuration
