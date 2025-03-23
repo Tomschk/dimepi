@@ -45,7 +45,6 @@ def coinslot_callback(channel):
     keypad.set_credit_light_on()
 
 def setup_coinslot():
-    GPIO.cleanup()  # Ensure a clean GPIO state before setting up pins
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(COINSLOT_GPIO_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(COINSLOT_GPIO_PIN, GPIO.FALLING, 
