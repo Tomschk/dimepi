@@ -27,6 +27,8 @@ async def jukebox_handler(queue, keypad):
 
         track_path = os.path.join(music_directory, f"{track}.mp3")
         
+        logging.info(f"Looking for track at: {track_path}")  # Add this line to log the path
+        
         if os.path.exists(track_path):
             logging.info(f"Playing song: {track}")
             mixer.music.load(track_path)
