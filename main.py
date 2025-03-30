@@ -22,6 +22,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
 mixer.init()
 shuffle_mode = False  # Flag to indicate if we are in shuffle mode
 shuffle_task = None   # Task to handle shuffle playback
+stop_music = False    # Flag to indicate if music should be stopped immediately
 
 async def play_shuffle():
     global shuffle_mode
@@ -42,8 +43,20 @@ async def play_shuffle():
                 await asyncio.sleep(1)
 
 async def jukebox_handler(queue, keypad):
-    global shuffle_mode, shuffle_task
+    global shuffle_mode, shuffle_task, stop_music
     while True:
+        if stop_music:
+            logging.info("Stopping all music and clearing queue immediately due to F3.")
+            mixer.music.stop()
+            shuffle_mode = False
+            if shuffle_task:
+                shuffle_task.cancel()
+            while not queue.empty():
+                queue.get_nowait()
+                queue.task_done()
+            stop_music = False
+            continue  # Skip the rest of the loop and restart
+
         track = await queue.get()
         queue.task_done()
 
@@ -56,15 +69,8 @@ async def jukebox_handler(queue, keypad):
                 logging.info("Entering shuffle mode.")
                 shuffle_task = asyncio.create_task(play_shuffle())
         elif track == "F3":
-            logging.info("Stopping all music and clearing queue immediately.")
-            mixer.music.stop()
-            shuffle_mode = False
-            if shuffle_task:
-                shuffle_task.cancel()
-            while not queue.empty():
-                queue.get_nowait()
-                queue.task_done()
-            continue  # Skip the rest of the loop to prevent playing any queued songs
+            # We will directly set the stop_music flag, no need to process F3 in the queue
+            stop_music = True
         else:
             logging.info("Stopping any currently playing song before playing new selection.")
             mixer.music.stop()
@@ -73,7 +79,7 @@ async def jukebox_handler(queue, keypad):
                 shuffle_mode = False
                 if shuffle_task:
                     shuffle_task.cancel()
-            
+
             track_path = os.path.join(music_directory, f"{track}.mp3")
             
             logging.info(f"Looking for track at: {track_path}")
