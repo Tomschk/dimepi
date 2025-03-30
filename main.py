@@ -109,8 +109,29 @@ def main():
         # Attach the new method to the Keypad instance
         setattr(keypad, "blink_credit_light", blink_credit_light)
 
+        # Modify get_key_combination to handle F3 immediately
+        async def get_key_combination_immediate():
+            while True:
+                l = keypad.get_keypress()
+                if l != False:
+                    if l == "F3":
+                        # Directly handle F3 without adding to the queue
+                        logging.info("F3 pressed: stopping music and clearing queue.")
+                        stop_music = True
+                    elif l == "F4":
+                        # Handle F4 similarly without adding to the queue
+                        logging.info("F4 pressed: entering shuffle mode.")
+                        if not shuffle_mode:
+                            shuffle_mode = True
+                            shuffle_task = asyncio.create_task(play_shuffle())
+                    else:
+                        # Add other keys to the queue
+                        logging.debug("Adding selection to queue: " + l)
+                        keypad_queue.put_nowait(l)
+                await asyncio.sleep(0.1)
+
         loop = asyncio.get_event_loop()
-        loop.create_task(keypad.get_key_combination())
+        loop.create_task(get_key_combination_immediate())  # Use the immediate handler for keypresses
         loop.create_task(jukebox_handler(keypad_queue, keypad))
         loop.run_forever()
     
