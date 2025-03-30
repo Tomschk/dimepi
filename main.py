@@ -55,6 +55,18 @@ async def jukebox_handler(queue, keypad):
                 shuffle_mode = True
                 logging.info("Entering shuffle mode.")
                 shuffle_task = asyncio.create_task(play_shuffle())
+        elif track == "F3":
+            # Stop music immediately and clear the queue
+            logging.info("F3 pressed: Stopping all music and clearing queue.")
+            mixer.music.stop()
+            shuffle_mode = False
+            if shuffle_task:
+                shuffle_task.cancel()  # Stop shuffle playback if it's running
+
+            # Clear the queue immediately
+            while not queue.empty():
+                queue.get_nowait()
+                queue.task_done()
         else:
             logging.info("Stopping any currently playing song before playing new selection.")
             mixer.music.stop()
@@ -63,7 +75,7 @@ async def jukebox_handler(queue, keypad):
                 shuffle_mode = False
                 if shuffle_task:
                     shuffle_task.cancel()
-            
+
             track_path = os.path.join(music_directory, f"{track}.mp3")
             
             logging.info(f"Looking for track at: {track_path}")
