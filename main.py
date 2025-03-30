@@ -25,6 +25,9 @@ async def jukebox_handler(queue, keypad):
         track = await queue.get()
         queue.task_done()
 
+        # Turn on the credit light for 5 seconds with each selection
+        await keypad.blink_credit_light()
+
         track_path = os.path.join(music_directory, f"{track}.mp3")
         
         logging.info(f"Looking for track at: {track_path}")  # Add this line to log the path
@@ -33,9 +36,6 @@ async def jukebox_handler(queue, keypad):
             logging.info(f"Playing song: {track}")
             mixer.music.load(track_path)
             mixer.music.play()
-            
-            # Turn on the credit light for 5 seconds with each selection
-            await keypad.blink_credit_light()
             
             while mixer.music.get_busy():  # Wait until song finishes
                 await asyncio.sleep(1)
