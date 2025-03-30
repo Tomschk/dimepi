@@ -46,6 +46,7 @@ async def jukebox_handler(queue, keypad):
     global shuffle_mode, shuffle_task, stop_music
     while True:
         if stop_music:
+            # Stop all music and clear the queue immediately
             logging.info("Stopping all music and clearing queue immediately due to F3.")
             mixer.music.stop()
             shuffle_mode = False
