@@ -34,16 +34,27 @@ async def jukebox_handler(queue, keypad):
             mixer.music.load(track_path)
             mixer.music.play()
             
+            # Turn on the credit light for 5 seconds
+            asyncio.create_task(keypad.blink_credit_light())
+            
             while mixer.music.get_busy():  # Wait until song finishes
                 await asyncio.sleep(1)
         else:
             logging.error(f"Track {track} not found")
 
-
 def main():
     try:
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
+
+        # Add blink_credit_light method to Keypad class
+        async def blink_credit_light():
+            keypad.set_credit_light_on()
+            await asyncio.sleep(5)
+            keypad.set_credit_light_off()
+        
+        # Attach the new method to the Keypad instance
+        setattr(keypad, "blink_credit_light", blink_credit_light)
 
         loop = asyncio.get_event_loop()
         loop.create_task(keypad.get_key_combination())
