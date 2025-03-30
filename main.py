@@ -22,7 +22,6 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
 mixer.init()
 shuffle_mode = False  # Flag to indicate if we are in shuffle mode
 shuffle_task = None   # Task to handle shuffle playback
-stop_music_flag = False  # Flag to stop music immediately
 
 async def play_shuffle():
     global shuffle_mode
@@ -43,22 +42,8 @@ async def play_shuffle():
                 await asyncio.sleep(1)
 
 async def jukebox_handler(queue, keypad):
-    global shuffle_mode, shuffle_task, stop_music_flag
+    global shuffle_mode, shuffle_task
     while True:
-        if stop_music_flag:
-            # If the stop flag is set, stop the music and clear the queue immediately
-            logging.info("F3 pressed: Stopping all music and clearing queue immediately.")
-            mixer.music.stop()
-            shuffle_mode = False
-            if shuffle_task:
-                shuffle_task.cancel()  # Stop shuffle playback if it's running
-            stop_music_flag = False  # Reset the stop flag
-
-            # Clear the queue immediately
-            while not queue.empty():
-                queue.get_nowait()
-                queue.task_done()
-
         track = await queue.get()
         queue.task_done()
 
@@ -70,9 +55,6 @@ async def jukebox_handler(queue, keypad):
                 shuffle_mode = True
                 logging.info("Entering shuffle mode.")
                 shuffle_task = asyncio.create_task(play_shuffle())
-        elif track == "F3":
-            # Set the flag to stop the music immediately and clear the queue
-            stop_music_flag = True
         else:
             logging.info("Stopping any currently playing song before playing new selection.")
             mixer.music.stop()
@@ -81,7 +63,7 @@ async def jukebox_handler(queue, keypad):
                 shuffle_mode = False
                 if shuffle_task:
                     shuffle_task.cancel()
-
+            
             track_path = os.path.join(music_directory, f"{track}.mp3")
             
             logging.info(f"Looking for track at: {track_path}")
