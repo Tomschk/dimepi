@@ -65,6 +65,8 @@ async def jukebox_handler(queue, keypad):
                 queue.get_nowait()
                 queue.task_done()
         else:
+            logging.info("Stopping any currently playing song before playing new selection.")
+            mixer.music.stop()
             if shuffle_mode:
                 logging.info("Exiting shuffle mode.")
                 shuffle_mode = False
