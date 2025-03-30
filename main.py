@@ -34,8 +34,8 @@ async def jukebox_handler(queue, keypad):
             mixer.music.load(track_path)
             mixer.music.play()
             
-            # Turn on the credit light for 5 seconds
-            asyncio.create_task(keypad.blink_credit_light())
+            # Turn on the credit light for 5 seconds with each selection
+            await keypad.blink_credit_light()
             
             while mixer.music.get_busy():  # Wait until song finishes
                 await asyncio.sleep(1)
