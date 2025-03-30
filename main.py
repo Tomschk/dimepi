@@ -56,7 +56,7 @@ async def jukebox_handler(queue, keypad):
                 logging.info("Entering shuffle mode.")
                 shuffle_task = asyncio.create_task(play_shuffle())
         elif track == "F3":
-            logging.info("Stopping all music and clearing queue.")
+            logging.info("Stopping all music and clearing queue immediately.")
             mixer.music.stop()
             shuffle_mode = False
             if shuffle_task:
@@ -64,6 +64,7 @@ async def jukebox_handler(queue, keypad):
             while not queue.empty():
                 queue.get_nowait()
                 queue.task_done()
+            continue  # Skip the rest of the loop to prevent playing any queued songs
         else:
             logging.info("Stopping any currently playing song before playing new selection.")
             mixer.music.stop()
