@@ -25,6 +25,9 @@ async def jukebox_handler(queue, keypad):
         track = await queue.get()
         queue.task_done()
 
+        # Turn on the credit light for 5 seconds with each selection
+        await keypad.blink_credit_light()
+
         track_path = os.path.join(music_directory, f"{track}.mp3")
         
         logging.info(f"Looking for track at: {track_path}")  # Add this line to log the path
@@ -53,15 +56,9 @@ def main():
         # Attach the new method to the Keypad instance
         setattr(keypad, "blink_credit_light", blink_credit_light)
 
-        async def keypad_listener():
-            while True:
-                track = await keypad_queue.get()
-                await keypad.blink_credit_light()
-                await jukebox_handler(asyncio.Queue().put_nowait(track), keypad)
-
         loop = asyncio.get_event_loop()
         loop.create_task(keypad.get_key_combination())
-        loop.create_task(keypad_listener())
+        loop.create_task(jukebox_handler(keypad_queue, keypad))
         loop.run_forever()
     
     finally:
