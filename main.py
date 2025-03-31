@@ -6,7 +6,6 @@ import asyncio
 import logging
 import os
 import random
-import signal
 from pygame import mixer
 import configparser
 
@@ -17,9 +16,7 @@ music_directory = config['general']['music_directory']  # Directory where MP3s a
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
     level=logging.DEBUG,
-    datefmt='%Y-%m-%d %H:%M:%S',
-    filename='/var/log/jukebox.log',  # Log output to a file for systemd tracking
-    filemode='a')
+    datefmt='%Y-%m-%d %H:%M:%S')
 
 # Initialize Pygame mixer
 mixer.init()
@@ -44,17 +41,6 @@ async def play_shuffle():
             while mixer.music.get_busy() and shuffle_mode:
                 await asyncio.sleep(1)
 
-def shutdown_handler(signum, frame):
-    logging.info("Shutdown signal received. Stopping music and cleaning up.")
-    mixer.music.stop()
-    GPIO.cleanup()
-    mixer.quit()
-    loop.stop()
-
-def register_shutdown_signals():
-    signal.signal(signal.SIGTERM, shutdown_handler)
-    signal.signal(signal.SIGINT, shutdown_handler)
-
 async def jukebox_handler(queue, keypad):
     global shuffle_mode, shuffle_task
     while True:
@@ -69,15 +55,6 @@ async def jukebox_handler(queue, keypad):
                 shuffle_mode = True
                 logging.info("Entering shuffle mode.")
                 shuffle_task = asyncio.create_task(play_shuffle())
-        elif track == "F3":
-            logging.info("Stopping all music and clearing queue.")
-            mixer.music.stop()
-            shuffle_mode = False
-            if shuffle_task:
-                shuffle_task.cancel()
-            while not queue.empty():
-                queue.get_nowait()
-                queue.task_done()
         else:
             logging.info("Stopping any currently playing song before playing new selection.")
             mixer.music.stop()
@@ -103,7 +80,6 @@ async def jukebox_handler(queue, keypad):
 
 def main():
     try:
-        register_shutdown_signals()
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
 
